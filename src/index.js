@@ -4,6 +4,7 @@ require("./db/mongoose");
 const User = require("./models/user");
 const Task = require("./models/task");
 const { mongo } = require("mongoose");
+const { update } = require("./models/user");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -91,6 +92,33 @@ app.get("/users/:id", async (req, res) => {
   //   });
 });
 
+app.patch("/users/:id", async (req, res) => {
+  const _id = mongoose.Types.ObjectId(req.params.id);
+
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ["name", "email", "password", "age"];
+  const isValidOperation = updates.every((value) => {
+    return allowedUpdates.includes(value);
+  });
+
+  if (!isValidOperation) {
+    return res.status(400).send({ error: "Invalid updates!" });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(_id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    res.status(200).send(user);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+
 app.get("/tasks", async (req, res) => {
   try {
     const tasks = await Task.find({});
@@ -130,6 +158,31 @@ app.get("/task/:id", async (req, res) => {
   //   .catch((error) => {
   //     res.status(500).send(error);
   //   });
+});
+
+app.patch("/tasks/:id", async (req, res) => {
+  const _id = mongoose.Types.ObjectId(req.params.id);
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ["description", "completed"];
+  const isValidOperation = updates.every((value) => {
+    return allowedUpdates.includes(value);
+  });
+  if (!isValidOperation) {
+    return res.status(400).send({ error: "Invalid updates!" });
+  }
+
+  try {
+    const task = await Task.findByIdAndUpdate(_id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!task) {
+      res.status(404).send("Task not found");
+    }
+    res.send(task);
+  } catch (error) {
+    res.status(400).send(error);
+  }
 });
 
 app.listen(port, () => {
