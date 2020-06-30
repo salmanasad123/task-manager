@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const { response } = require("express");
 const router = new express.Router();
+const auth = require("../middleware/auth");
 
+// sign up route
 router.post("/users", async (req, res) => {
   const user = new User(req.body);
 
@@ -38,13 +40,12 @@ router.post("/users/login", async (req, res) => {
   }
 });
 
-router.get("/users", async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.status(200).send(users);
-  } catch (error) {
-    res.status(500).send(error);
-  }
+// auth middlware will run before any route handler
+// fetch user profile
+router.get("/users/me", auth, async (req, res) => {
+  
+  res.send(req.user);
+
   // User.find({})
   //   .then((users) => {
   //     res.status(200).send(users);
