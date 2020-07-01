@@ -40,10 +40,32 @@ router.post("/users/login", async (req, res) => {
   }
 });
 
+router.post("/users/logout", auth, async (req, res) => {
+  try {
+    req.user.tokens = req.user.tokens.filter((token) => {
+      return token.token !== req.token;
+    });
+    await req.user.save();
+
+    res.status(200).send();
+  } catch (error) {
+    res.status(500).send();
+  }
+});
+
+router.post("/users/logoutAll", auth, async (req, res) => {
+  try {
+    req.user.tokens = [];
+    await req.user.save();
+    res.status(200).send();
+  } catch (error) {
+    res.status(500).send();
+  }
+});
+
 // auth middlware will run before any route handler
 // fetch user profile
 router.get("/users/me", auth, async (req, res) => {
-  
   res.send(req.user);
 
   // User.find({})
@@ -55,7 +77,7 @@ router.get("/users/me", auth, async (req, res) => {
   //   });
 });
 
-router.get("/users/:id", async (req, res) => {
+router.get("/users/:id", auth, async (req, res) => {
   const _id = mongoose.Types.ObjectId(req.params.id);
 
   try {
@@ -80,8 +102,9 @@ router.get("/users/:id", async (req, res) => {
   //   });
 });
 
-router.patch("/users/:id", async (req, res) => {
-  const _id = mongoose.Types.ObjectId(req.params.id);
+router.patch("/users/me", auth, async (req, res) => {
+  // const _id = mongoose.Types.ObjectId(req.params.id);
+  const _id = mongoose.Types.ObjectId(req.user._id);
 
   const updates = Object.keys(req.body);
   const allowedUpdates = ["name", "email", "password", "age"];
@@ -94,38 +117,40 @@ router.patch("/users/:id", async (req, res) => {
   }
 
   try {
-    // the findById and update method bypasses mongoose, it performs direct operations on the database so we have to go more traditional mongoose way
-    const user = await User.findById(_id);
+    // the findByIdAndUpdate method bypasses mongoose, it performs direct operations on the database so we have to go more traditional mongoose way
+    // const user = await User.findById(_id);
 
     updates.forEach((update) => {
-      user[update] = req.body[update];
+      req.user[update] = req.body[update];
     });
 
-    await user.save();
+    await req.user.save();
 
     // const user = await User.findByIdAndUpdate(_id, req.body, {
     //   new: true,
     //   runValidators: true,
     // });
 
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-    res.status(200).send(user);
+    // if (!user) {
+    //   return res.status(404).send("User not found");
+    // }
+    res.status(200).send(req.user);
   } catch (error) {
     res.status(400).send(error);
   }
 });
 
-router.delete("/users/:id", async (req, res) => {
-  const _id = mongoose.Types.ObjectId(req.params.id);
+router.delete("/users/me", auth, async (req, res) => {
+  // const _id = mongoose.Types.ObjectId(req.user._id);
+  const _id = mongoose.Types.ObjectId(req.user._id); // we have access to request.user object which we have attached to req in auth middleware
 
   try {
-    const user = await User.findByIdAndDelete(_id);
-    if (!user) {
-      return res.status(400).send("User not found");
-    }
-    res.status(200).send(user);
+    // const user = await User.findByIdAndDelete(_id);
+    // if (!user) {
+    //   return res.status(400).send("User not found");
+    // }
+    await req.user.remove();
+    res.status(200).send(req.user);
   } catch (error) {
     res.status(500).send(error);
   }

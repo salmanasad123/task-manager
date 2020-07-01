@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Task = require("./task");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -51,6 +52,36 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
+// virtual fields are not stored in the database, it is just for mongoose to figure out who owns what
+userSchema.virtual("tasks", {
+  ref: "Task",
+  localField: "_id",
+  foreignField: "owner",
+});
+
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
+
+// userSchema.methods.getPublicProfile = function () {
+//   const user = this;
+//   const userObject = user.toObject();
+
+//   delete userObject.password;
+//   delete userObject.tokens;
+
+//   return userObject;
+// };
+
+userSchema.methods.toJSON = function () {
+  const user = this;
+  const userObject = user.toObject();
+
+  delete userObject.password;
+  delete userObject.tokens;
+
+  return userObject;
+};
+
 // methods 'methods' are accessible on instances of the models
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
@@ -86,6 +117,14 @@ userSchema.pre("save", async function (next) {
     user.password = await bcrypt.hash(user.password, 8);
   }
 
+  next();
+});
+
+// middleware that delete user tasks when user is removed
+userSchema.pre("remove", async function (next) {
+  const user = this;
+
+  await Task.deleteMany({ owner: user._id });
   next();
 });
 

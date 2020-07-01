@@ -11,6 +11,11 @@ const Task = mongoose.model("Task", {
     type: Boolean,
     default: false,
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId, // task should have the userID who created the task we are calling it owner
+    required: true,
+    ref: "User",   // model name 'User' for ref property
+  },
 });
 
 module.exports = Task;

@@ -16,6 +16,7 @@ const auth = async (req, res, next) => {
     }
     // if user is authenticated and we find it in database we need to pass that user to the next middleware(our route handler) so that our route handler doesnt have to find it again
     req.user = user;
+    req.token = token;
     next();
   } catch (error) {
     res.status(401).send({ error: "Please authenticate." });

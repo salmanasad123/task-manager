@@ -4,7 +4,6 @@ require("./db/mongoose");
 const userRouter = require("./routers/user");
 const taskRouter = require("./routers/task");
 
-
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -25,17 +24,18 @@ app.listen(port, () => {
   console.log("Server is up on " + port);
 });
 
-// jwt example
-const jwt = require("jsonwebtoken");
+const Task = require("./models/task");
+const User = require("./models/user");
 
-const myFunction = async () => {
-  const token = jwt.sign({ _id: "abc123" }, "thisismynewcourse", {
-    expiresIn: "7 days",
-  });
-  console.log(token);
+const main = async () => {
+  // const task = await Task.findById("5efc6c4bc5e6b90de00b6dc1");
+  // // populate allows us to populate data from a relationship
+  // await task.populate("owner").execPopulate();
+  // console.log(task);
 
-  const data = jwt.verify(token, "thisismynewcourse");
-  console.log(data);
+  const user = await User.findById("5efc82d602db3627e016ff99");
+  await user.populate("tasks").execPopulate();
+  console.log(user.tasks);
 };
 
-myFunction();
+main();
